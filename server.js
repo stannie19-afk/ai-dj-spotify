@@ -66,6 +66,6 @@ app.get('/callback', async (req, res) => {
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ Server draait op http://localhost:${PORT}`);
+  console.log(`✅ Server draait op 0.0.0.0:${PORT}`);
   console.log(`🔗 Login via: http://localhost:${PORT}/login`);
 });
