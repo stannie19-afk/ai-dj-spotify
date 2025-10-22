@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI DJ - Spotify Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #1DB954;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .status.info { background: #e3f2fd; color: #1976d2; }
+        .status.success { background: #e8f5e9; color: #388e3c; }
+        .status.error { background: #ffebee; color: #c62828; }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-spotify {
+            background: #1DB954;
+            color: white;
+        }
+        
+        .btn-spotify:hover {
+            background: #1ed760;
+            transform: translateY(-2px);
+        }
+        
+        .btn-play {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-pause {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .track-info {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .track-info.show {
+            display: block;
+        }
+        
+        .track-name {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .track-artist {
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 AI DJ Control</h1>
+        
+        <div id="status" class="status info">
+            Klik op de knop om in te loggen
+        </div>
+        
+        <div id="loginSection">
+            <button class="btn-spotify" onclick="login()">
+                Inloggen met Spotify
+            </button>
+        </div>
+        
+        <div id="controls" style="display: none;">
+            <button class="btn-play" onclick="play()">▶️ Afspelen</button>
+            <button class="btn-pause" onclick="pause()">⏸️ Pauzeren</button>
+            <button class="btn-play" onclick="refreshTrack()">🔄 Ververs</button>
+        </div>
+        
+        <div id="trackInfo" class="track-info">
+            <div class="track-name" id="trackName">-</div>
+            <div class="track-artist" id="trackArtist">-</div>
+        </div>
+    </div>
+
+    <script>
+        let accessToken = null;
+
+        window.addEventListener('load', function() {
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('access_token');
+            const error = params.get('error');
+
+            if (token) {
+                accessToken = token;
+                window.history.replaceState({}, document.title, '/');
+                
+                updateStatus('✅ Ingelogd!', 'success');
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('controls').style.display = 'block';
+                
+                refreshTrack();
+            } else if (error) {
+                updateStatus('❌ Error: ' + error, 'error');
+            }
+        });
+
+        function login() {
+            window.location.href = '/login';
+        }
+
+        function play() {
+            if (!accessToken) return;
+            
+            fetch('https://api.spotify.com/v1/me/player/play', {
+                method: 'PUT',
+                headers: { 'Authorization': 'Bearer ' + accessToken }
+            })
+            .then(function(response) {
+                if (response.ok || response.status === 204) {
+                    updateStatus('▶️ Muziek speelt!', 'success');
+                    setTimeout(refreshTrack, 500);
+                } else if (response.status === 404) {
+                    updateStatus('⚠️ Geen actief apparaat. Open Spotify!', 'error');
+                } else {
+                    updateStatus('❌ Fout bij afspelen', 'error');
+                }
+            })
+            .catch(function(error) {
+                updateStatus('❌ Error: ' + error.message, 'error');
+            });
+        }
+
+        function pause() {
+            if (!accessToken) return;
+            
+            fetch('https://api.spotify.com/v1/me/player/pause', {
+                method: 'PUT',
+                headers: { 'Authorization': 'Bearer ' + accessToken }
+            })
+            .then(function() {
+                updateStatus('⏸️ Gepauzeerd', 'info');
+            })
+            .catch(function(error) {
+                updateStatus('❌ Error: ' + error.message, 'error');
+            });
+        }
+
+        function refreshTrack() {
+            if (!accessToken) return;
+            
+            fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+                headers: { 'Authorization': 'Bearer ' + accessToken }
+            })
+            .then(function(response) {
+                if (response.ok) {
+                    return response.json();
+                }
+            })
+            .then(function(data) {
+                if (data && data.item) {
+                    document.getElementById('trackName').textContent = data.item.name;
+                    document.getElementById('trackArtist').textContent = 
+                        data.item.artists.map(function(a) { return a.name; }).join(', ');
+                    document.getElementById('trackInfo').classList.add('show');
+                }
+            })
+            .catch(function(error) {
+                console.error('Error getting track:', error);
+            });
+        }
+
+        function updateStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+        }
+    </script>
+</body>
+</html>
