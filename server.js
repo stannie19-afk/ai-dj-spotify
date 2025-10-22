@@ -24,7 +24,6 @@ app.get('/test', (req, res) => {
 });
 
 // Debug route - check public folder
-const fs = require('fs');
 app.get('/debug', (req, res) => {
   const publicPath = path.join(__dirname, 'public');
   const indexPath = path.join(publicPath, 'index.html');
