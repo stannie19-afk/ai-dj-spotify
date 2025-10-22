@@ -17,6 +17,11 @@ const REDIRECT_URI = process.env.REDIRECT_URI || `http://localhost:${PORT}/callb
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
+// Test route
+app.get('/test', (req, res) => {
+  res.send('Server werkt! 🎉');
+});
+
 // Route: Login met Spotify
 app.get('/login', (req, res) => {
   const scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing';
