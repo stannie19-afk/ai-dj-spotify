@@ -2,6 +2,7 @@
 const express = require('express');
 const axios = require('axios');
 const path = require('path');
+const fs = require('fs'); 
 require('dotenv').config();
 
 // App initialiseren
@@ -20,6 +21,21 @@ app.use(express.json());
 // Test route
 app.get('/test', (req, res) => {
   res.send('Server werkt! 🎉');
+});
+
+// Debug route - check public folder
+const fs = require('fs');
+app.get('/debug', (req, res) => {
+  const publicPath = path.join(__dirname, 'public');
+  const indexPath = path.join(publicPath, 'index.html');
+  
+  res.send(`
+    <h2>Debug Info:</h2>
+    <p>__dirname: ${__dirname}</p>
+    <p>Public path: ${publicPath}</p>
+    <p>Public folder exists: ${fs.existsSync(publicPath)}</p>
+    <p>index.html exists: ${fs.existsSync(indexPath)}</p>
+  `);
 });
 
 // Route: Login met Spotify
